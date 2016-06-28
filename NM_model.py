@@ -106,6 +106,10 @@ class MF_model(object):
     def MF_model_in_bin(self,lMlow,lMhigh,params):
         return integrate.quad(self.dndM_at_M,lMlow,lMhigh,args=(params),epsabs=TOL,epsrel=TOL/10.)[0]*self.volume
 
+    """
+    The veriable 'variances' contains the
+    variance in the paramters, namely f and g.
+    """
     def var_MF_model_all_bins(self,lM_bins,params,variances):
         return np.array([self.var_MF_model_in_bin(lMlow,lMhigh,params,variances) for lMlow,lMhigh in lM_bins])
 
