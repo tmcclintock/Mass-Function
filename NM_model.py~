@@ -1,0 +1,95 @@
+import cosmocalc as cc
+from scipy import special
+from scipy import integrate
+from scipy.interpolate import InterpolatedUnivariateSpline as IUS
+import numpy as np
+
+TOL = 1e-3
+
+class NM_model(object):
+    def __init__(self,cosmo_dict,lM_bounds,volume):
+        self.lM_bounds = lM_bounds
+        self.volume = volume #volume of the simulation
+        self.set_new_cosmology(cosmo_dict)
+
+    def set_new_cosmology(self,cosmo_dict):
+        #Constants
+        G = 4.52e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
+        Mpcperkm = 3.241e-20 #Mpc/km; used to convert H0 to s^-1
+        self.cosmo_dict = cosmo_dict
+        cc.set_cosmology(cosmo_dict)
+        self.build_splines()
+        Om,H0 = cosmo_dict["om"],cosmo_dict["h"]*100.0
+        self.rhom=Om*3.*(H0*Mpcperkm)**2/(8*np.pi*G*(H0/100.)**2)#Msunh^2/Mpc^3
+
+    def build_splines(self):
+        lM_min,lM_max = self.lM_bounds
+        M_space = np.logspace(lM_min-1,lM_max+1,500,base=10)
+        sigmaM = np.array([cc.sigmaMtophat_exact(M,1.0) for M in M_space])
+        ln_sig_inv_spline = IUS(M_space,-np.log(sigmaM))
+        deriv_spline = ln_sig_inv_spline.derivative()
+        self.deriv_spline = deriv_spline
+        self.splines_built = True
+        return
+
+    def B_coeff(self,d,e,f,g):
+        return 2.0/(e**d * g**(-d/2.)*special.gamma(d/2.) + g**(-f/2.)*special.gamma(f/2.))
+
+    def dB_df(self,d,e,f,g):
+        B = self.B_coeff(d,e,f,g)
+        return B*B/2*(g**(-f/2.)*np.log(g)*special.gamma(f/2.)-g**(-f/2.)*special.gamma(f/2.)*special.digamma(f/2.))
+
+    def dB_dg(self,d,e,f,g):
+        B = self.B_coeff(d,e,f,g)
+        return B*B/2.*(d*e**d*g**(-d/2.-1)*special.gamma(d/2.) + f*g**(-f/2.-1)*special.gamma(f/2.))
+
+    def dg_df(self,sigma,params):
+        d,e,f,g,lns = params
+        dBdf = self.dB_df(d,e,f,g)
+        B = self.B_coeff(d,e,f,g)
+        return dBdf*((sigma/e)**-d+sigma**-f)*np.exp(-g/sigma**2) -B*sigma**-f*np.log(sigma)
+
+    def dg_dg(self,sigma,params):
+        d,e,f,g,lns = params
+        dBdg = self.dB_dg(d,e,f,g)
+        g = self.calc_g(sigma,params)
+        return -g/sigma**2 + dBdg*np.exp(-g/sigma**2)*((sigma/e)**-d + sigma**-f)
+        
+    def calc_g(self,sigma,params):
+        d,e,f,g,ln_scatter = params
+        return self.B_coeff(d,e,f,g)*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
+
+    def ddf_dndM_at_M(self,lM,params):
+        rhom,dln_sig_inv_dM_spline = self.rhom,self.deriv_spline
+        M = np.exp(lM)
+        dgdf = self.dg_df(cc.sigmaMtophat(M,1.0),params)
+        return dgdf * self.rhom*dln_sig_inv_dM_spline(M) #*M/M #log integral
+
+    def ddg_dndM_at_M(self,lM,params):
+        rhom,dln_sig_inv_dM_spline = self.rhom,self.deriv_spline
+        M = np.exp(lM)
+        dgdg = self.dg_dg(cc.sigmaMtophat(M,1.0),params)
+        return dgdg * self.rhom*dln_sig_inv_dM_spline(M) #*M/M #log integral
+
+    def dndM_at_M(self,lM,params):
+        rhom,dln_sig_inv_dM_spline = self.rhom,self.deriv_spline
+        M = np.exp(lM)
+        g_sigma = self.calc_g(cc.sigmaMtophat(M,1.0),params)
+        return g_sigma * self.rhom*dln_sig_inv_dM_spline(M) #*M/M #log integral
+
+    def var_NM_model_in_bin(self,lMlow,lMhigh,params,variances):
+        dNdf = integrate.quad(self.ddf_dndM_at_M,lMlow,lMhigh,args=(params),\
+                                  epsabs=TOL,epsrel=TOL/10.)[0]*self.volume
+        dNdg = integrate.quad(self.ddg_dndM_at_M,lMlow,lMhigh,args=(params),\
+                                  epsabs=TOL,epsrel=TOL/10.)[0]*self.volume
+        return dNdf**2*variances[0] + dNdg**2*variances[1]
+
+    def NM_model_in_bin(self,lMlow,lMhigh,params):
+        return integrate.quad(self.dndM_at_M,lMlow,lMhigh,args=(params),\
+                              epsabs=TOL,epsrel=TOL/10.)[0]*self.volume
+
+    def var_NM_model_all_bins(self,lM_bins,params,variances):
+        return np.array([self.var_NM_model_in_bin(lMlow,lMhigh,params,variances) for lMlow,lMhigh in lM_bins])
+
+    def NM_model_all_bins(self,lM_bins,params):
+        return np.array([self.NM_model_in_bin(lMlow,lMhigh,params) for lMlow,lMhigh in lM_bins])
