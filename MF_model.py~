@@ -1,3 +1,7 @@
+"""
+This contains the Tinker08 mass function.
+"""
+
 import cosmocalc as cc
 from scipy import special
 from scipy import integrate
@@ -30,6 +34,14 @@ class MF_model(object):
         self.redshift = redshift
         self.scale_factor = 1./(1.+self.redshift)
         self.set_new_cosmology(cosmo_dict)
+        self.set_params = False
+
+    def set_parameters(self,d,e,f,g):
+        self.d = d
+        self.e = e
+        self.f = f
+        self.g = g
+        self.set_params = True
 
     def set_new_cosmology(self,cosmo_dict):
         #Constants
@@ -113,7 +125,9 @@ class MF_model(object):
     def var_MF_model_all_bins(self,lM_bins,params,variances):
         return np.array([self.var_MF_model_in_bin(lMlow,lMhigh,params,variances) for lMlow,lMhigh in lM_bins])
 
-    def MF_model_all_bins(self,lM_bins,params,redshift):
+    def MF_model_all_bins(self,lM_bins,redshift):
+        if not self.set_params: raise ValueError("Must set parameters before modeling.")
+        params = np.array([self.d,self.e,self.f,self.g])
         if not (redshift == self.redshift):
             self.redshift = redshift
             self.scale_factor = 1./(1.+redshift)
@@ -132,10 +146,11 @@ if __name__ == "__main__":
 
     MF = MF_model(cosmo_dict,bounds,volume,redshift)
 
-    params = np.array([1.97,1.0,0.51,1.228]) #d,e,f,g
+    d,e,f,g = 1.97,1.0,0.51,1.228 #d,e,f,g
+    MF.set_parameters(d,e,f,g)
 
-    bins = MF.make_bins(20,12,15)
-    output = MF.MF_model_all_bins(bins,params,redshift)
+    bins = MF.make_bins(Nbins=20,lM_low=12,lM_high=15)
+    output = MF.MF_model_all_bins(bins,redshift)
 
     Masses = np.mean(10**bins,1)
     import matplotlib.pyplot as plt
