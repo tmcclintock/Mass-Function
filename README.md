@@ -1,7 +1,8 @@
 Mass-Function
 =============
-An implementation of the Tinker et al. 2008 mass function 
-for predictiing the number of dark matter halos 
+An implementation of the Tinker et al. 
+(http://adsabs.harvard.edu/abs/2008ApJ...688..709T) 
+2008 mass function for predictiing the number of dark matter halos 
 within some range of masses.
 
 Dependencies
