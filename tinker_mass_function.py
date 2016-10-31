@@ -100,19 +100,39 @@ class MF_model(object):
         return g_sigma * self.rhom * self.deriv_spline(M)
 
     """
+    This is the analytic derivative of n 
+    for each bin with respect to f and g.
+    """
+    def derivs_in_bins(self,lM_bins):
+        lM_bins = np.log(10**lM_bins)
+        dndf,dndg = [],[]
+        for lMlow,lMhigh in lM_bins:
+            dndf.append(integrate.quad(self.ddf_dndM_at_M,lMlow,lMhigh,args=(self.params))[0])
+            dndg.append(integrate.quad(self.ddg_dndM_at_M,lMlow,lMhigh,args=(self.params))[0])
+        return np.array([dndf,dndg])
+
+    """
     This is the variance in all bins.
     The variable 'variances' contains the
     variance in the paramters, namely f and g.
     """
     def variance_in_bins(self,lM_bins,variances):
-        lM_bins = np.log(10**lM_bins)
-        answer = np.zeros(len(lM_bins))
+        dndf,dndg = self.derivs_in_bins(lM_bins)
+        return dndf**2*variances[0] + dndg**2*variances[1]
+
+    """
+    Similar to the above, this gives the full
+    covariance matrix between the bins.
+    'Variances' contain the variance of f
+    and then the variance of g.
+    """
+    def covariance_in_bins(self,lM_bins,variances,fg_covariance=0):
+        dndf,dndg = self.derivs_in_bins(lM_bins)
+        cov = np.zeros((len(lM_bins),len(lM_bins)))
         for i in range(len(lM_bins)):
-            lMlow,lMhigh = lM_bins[i]
-            dNdf = integrate.quad(self.ddf_dndM_at_M,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0]
-            dNdg = integrate.quad(self.ddg_dndM_at_M,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0]
-            answer[i] = dNdf**2*variances[0] + dNdg**2*variances[1]
-        return answer
+            cov[i] = dndf[i]*dndf*variances[0] + dndg[i]*dndg*variances[1] + fg_covariance*(dndf[i]*dndg + dndg[i]*dndf)
+            continue #end i
+        return cov
 
     """
     Returns the number density [#/(Mpv/h)^3]
