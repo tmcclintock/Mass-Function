@@ -28,7 +28,7 @@ class MF_model(object):
     Optionally you can pass in log_10 of the mass bounds
     to build the spline between.
     """
-    def __init__(self,cosmo_dict,redshift,l10M_bounds=[12,16]):
+    def __init__(self,cosmo_dict,redshift,l10M_bounds=[11,16]):
         self.l10M_bounds = l10M_bounds #log_10 Mass bounds in Msun/h
         self.redshift = redshift
         self.scale_factor = 1./(1.+self.redshift)
