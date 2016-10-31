@@ -46,10 +46,8 @@ class MF_model(object):
         and in the calculation of the variance of the mass function.
         """
         self.B_coefficient = 2.0/(e**d * g**(-d/2.)*special.gamma(d/2.) + g**(-f/2.)*special.gamma(f/2.))
-        self.dBdf = self.B_coefficient*self.B_coefficient/2*\
-            (g**(-f/2.)*np.log(g)*special.gamma(f/2.) - g**(-f/2.)*special.gamma(f/2.)*special.digamma(f/2.))
-        self.dBdg = self.B_coefficient*self.B_coefficient/2.*\
-            (d*e**d*g**(-d/2.-1)*special.gamma(d/2.) + f*g**(-f/2.-1)*special.gamma(f/2.))
+        self.dBdf = self.B_coefficient*self.B_coefficient/4.*g**(-f/2.)*special.gamma(f/2.)*(np.log(g)-special.digamma(f/2.))
+        self.dBdg = self.B_coefficient*self.B_coefficient/4.*(d*e**d*g**(-d/2.-1)*special.gamma(d/2.)+f*g**(-f/2.-1)*special.gamma(f/2.))
         self.set_params = True
 
     def set_new_cosmology(self,cosmo_dict):
@@ -78,15 +76,16 @@ class MF_model(object):
         M = np.exp(lM)
         sigma = cc.sigmaMtophat(M,self.scale_factor)
         d,e,f,g = params
-        dgdf = self.dBdf*((sigma/e)**-d+sigma**-f)*np.exp(-g/sigma**2) -self.B_coefficient*sigma**-f*np.log(sigma)
+        dgdf = self.dBdf*((sigma/e)**-d+sigma**-f)*np.exp(-g/sigma**2) - self.B_coefficient*sigma**-f*np.log(sigma)*np.exp(-g/sigma**2)
         return dgdf * self.rhom * self.deriv_spline(M) #*M/M #log integral
 
     def ddg_dndM_at_M(self,lM,params):
         M = np.exp(lM)
         sigma = cc.sigmaMtophat(M,self.scale_factor)
         d,e,f,g = params
-        dgdg = -g/sigma**2 + self.dBdg*np.exp(-g/sigma**2)*((sigma/e)**-d + sigma**-f)
-        return dgdg * self.rhom * self.deriv_spline(M) #*M/M #log integral
+        g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
+        dg_sigmadg = -g_sigma/sigma**2 + self.dBdg*np.exp(-g/sigma**2)*((sigma/e)**-d + sigma**-f)
+        return dg_sigmadg * self.rhom * self.deriv_spline(M) #*M/M #log integral
 
     """
     The following contain the
@@ -174,12 +173,12 @@ if __name__ == "__main__":
     lM_bins = MF.make_bins(Nbins=10,lM_low=12,lM_high=15)
     Masses = np.mean(10**lM_bins,1) #The mid points of the bins, just for plotting
     n_z0 = MF.n_in_bins(lM_bins)
-    var_z0 = MF.variance_in_bins(lM_bins,[0.01,0.01])
+    n_var_z0 = MF.variance_in_bins(lM_bins,[0.01,0.01])
     n_z1 = MF.n_in_bins(lM_bins,1.0)
 
     import matplotlib.pyplot as plt
     plt.loglog(Masses,n_z1,label=r"$z=1$")
-    plt.errorbar(Masses,n_z0,np.sqrt(var_z0),label=r"$z=0$")
+    plt.errorbar(Masses,n_z0,np.sqrt(n_var_z0),label=r"$z=0$")
     plt.ylabel(r"$n\ [h^3{\rm Mpc^{-3}}]$")
     plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$")
     plt.legend()
