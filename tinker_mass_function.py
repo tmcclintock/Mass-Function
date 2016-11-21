@@ -28,27 +28,29 @@ class MF_model(object):
     Optionally you can pass in log_10 of the mass bounds
     to build the spline between.
     """
-    def __init__(self,cosmo_dict,redshift,l10M_bounds=[11,16]):
+    def __init__(self,cosmo_dict,redshift,l10M_bounds=[11,16],use_numerical_derivatives=False):
         self.l10M_bounds = l10M_bounds #log_10 Mass bounds in Msun/h
         self.redshift = redshift
         self.scale_factor = 1./(1.+self.redshift)
         self.set_new_cosmology(cosmo_dict)
-        self.set_params = False
+        self.params_are_set = False
+        self.use_numerical_derivatives = use_numerical_derivatives
 
     def set_parameters(self,d,e,f,g):
+        """
+        Specify the tinker parameters and calculate quantities
+        that only depend on them.
+        """
+
         self.d = d
         self.e = e
         self.f = f
         self.g = g
         self.params = np.array([self.d,self.e,self.f,self.g])
-        """
-        The following three attributes are used in the tinker mass function
-        and in the calculation of the variance of the mass function.
-        """
         self.B_coefficient = 2.0/(e**d * g**(-d/2.)*special.gamma(d/2.) + g**(-f/2.)*special.gamma(f/2.))
         self.dBdf = self.B_coefficient*self.B_coefficient/4.*g**(-f/2.)*special.gamma(f/2.)*(np.log(g)-special.digamma(f/2.))
         self.dBdg = self.B_coefficient*self.B_coefficient/4.*(d*e**d*g**(-d/2.-1)*special.gamma(d/2.)+f*g**(-f/2.-1)*special.gamma(f/2.))
-        self.set_params = True
+        self.params_are_set = True
 
     def set_new_cosmology(self,cosmo_dict):
         G = 4.52e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
@@ -72,14 +74,14 @@ class MF_model(object):
     The following functions are only used in calculating the variance
     in a mass bin.
     """
-    def ddf_dndM_at_M(self,lM,params):
+    def ddf_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
         sigma = cc.sigmaMtophat(M,self.scale_factor)
         d,e,f,g = params
         dgdf = self.dBdf*((sigma/e)**-d+sigma**-f)*np.exp(-g/sigma**2) - self.B_coefficient*sigma**-f*np.log(sigma)*np.exp(-g/sigma**2)
         return dgdf * self.rhom * self.deriv_spline(M) #*M/M #log integral
 
-    def ddg_dndM_at_M(self,lM,params):
+    def ddg_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
         sigma = cc.sigmaMtophat(M,self.scale_factor)
         d,e,f,g = params
@@ -106,8 +108,24 @@ class MF_model(object):
         lM_bins = np.log(10**lM_bins)
         dndf,dndg = [],[]
         for lMlow,lMhigh in lM_bins:
-            dndf.append(integrate.quad(self.ddf_dndM_at_M,lMlow,lMhigh,args=(self.params))[0])
-            dndg.append(integrate.quad(self.ddg_dndM_at_M,lMlow,lMhigh,args=(self.params))[0])
+            if not self.use_numerical_derivatives:
+                dndf.append(integrate.quad(self.ddf_dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0])
+                dndg.append(integrate.quad(self.ddg_dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0])
+            else:
+                params = np.copy(self.params)
+                Df = 0.1
+                Dg = 0.1
+                self.set_parameters(params[0],params[1],params[2]+Df/2.,params[3])
+                upper = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
+                self.set_parameters(params[0],params[1],params[2]-Df/2.,params[3])
+                lower = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
+                dndf.append((upper-lower)/Df)
+                self.set_parameters(params[0],params[1],params[2],params[3]+Dg/2.)
+                upper = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
+                self.set_parameters(params[0],params[1],params[2],params[3]-Dg/2.)
+                lower = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
+                dndg.append((upper-lower)/Dg)
+                self.set_parameters(params[0],params[1],params[2],params[3])
         return np.array([dndf,dndg])
 
     """
@@ -138,7 +156,7 @@ class MF_model(object):
     of halos within the mass bins.
     """
     def n_in_bins(self,lM_bins,redshift=None):
-        if not self.set_params: raise ValueError("Must set parameters before modeling.")
+        if not self.params_are_set: raise ValueError("Must set parameters before modeling.")
         if redshift is not None:
             if redshift != self.redshift:
                 self.redshift = redshift
@@ -148,7 +166,7 @@ class MF_model(object):
         return np.array([integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0] for lMlow,lMhigh in lM_bins])
 
     def n_approx_in_bins(self,lM_bins,redshift=None):
-        if not self.set_params: raise ValueError("Must set parameters before modeling.")
+        if not self.params_are_set: raise ValueError("Must set parameters before modeling.")
         if redshift is not None:
             if redshift != self.redshift:
                 self.redshift = redshift
@@ -175,6 +193,8 @@ if __name__ == "__main__":
     n_z0 = MF.n_in_bins(lM_bins)
     n_var_z0 = MF.variance_in_bins(lM_bins,[0.01,0.01])
     n_z1 = MF.n_in_bins(lM_bins,1.0)
+
+    print MF.derivs_in_bins(lM_bins)
 
     import matplotlib.pyplot as plt
     plt.loglog(Masses,n_z1,label=r"$z=1$")
