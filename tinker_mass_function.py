@@ -142,6 +142,7 @@ class MF_model(object):
                 lower = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
                 dndg.append((upper-lower)/Dg)
                 self.set_parameters(params[0],params[1],params[2],params[3])
+        #Still need to propagate the derivatives here.
         return np.array([dndf,dndg])
 
     """
@@ -160,6 +161,7 @@ class MF_model(object):
     and then the variance of g.
     """
     def covariance_in_bins(self,lM_bins,variances,fg_covariance=0):
+        #Still need to propagate derivatives here.
         dndf,dndg = self.derivs_in_bins(lM_bins)
         cov = np.zeros((len(lM_bins),len(lM_bins)))
         for i in range(len(lM_bins)):
