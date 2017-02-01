@@ -48,8 +48,10 @@ class MF_model(object):
         self.g = g
         self.params = np.array([self.d,self.e,self.f,self.g])
         self.B_coefficient = 2.0/(e**d * g**(-d/2.)*special.gamma(d/2.) + g**(-f/2.)*special.gamma(f/2.))
-        self.dBdf = self.B_coefficient*self.B_coefficient/4.*g**(-f/2.)*special.gamma(f/2.)*(np.log(g)-special.digamma(f/2.))
-        self.dBdg = self.B_coefficient*self.B_coefficient/4.*(d*e**d*g**(-d/2.-1)*special.gamma(d/2.)+f*g**(-f/2.-1)*special.gamma(f/2.))
+        self.dBdd = self.B_coefficient**2/4.*e**d*g**(-d/2.)*special.gamma(d/2.)*(np.log(g)-2-special.digamma(d/2.))
+        self.dBde = self.B_coefficient**2/2.*(-d)*e**(d-1)*g**(-d/2.)*special.gamma(d/2)
+        self.dBdf = self.B_coefficient**2/4.*g**(-f/2.)*special.gamma(f/2.)*(np.log(g)-special.digamma(f/2.))
+        self.dBdg = self.B_coefficient**2/4.*(d*e**d*g**(-d/2.-1)*special.gamma(d/2.)+f*g**(-f/2.-1)*special.gamma(f/2.))
         self.params_are_set = True
 
     def set_new_cosmology(self,cosmo_dict):
@@ -71,9 +73,23 @@ class MF_model(object):
         self.splines_built = True
 
     """
-    The following functions are only used in calculating the variance
-    in a mass bin.
+    The following functions are only used in 
+    calculating the variance in a mass bin.
     """
+    def ddd_dndlM_at_lM(self,lM,params):
+        M = np.exp(lM)
+        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        d,e,f,g = params
+        dgdd = np.exp(-g/sigma**2)*(self.dBdd*((sigma/e)**-d+sigma**-f)-self.B_coefficient*(sigma/e)**-d)
+        return dgdd * self.rhom * self.deriv_spline(M) #*M/M #log integral
+
+    def dde_dndlM_at_lM(self,lM,params):
+        M = np.exp(lM)
+        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        d,e,f,g = params
+        dgde = np.exp(-g/sigma**2)*(self.dBde*((sigma/e)**-d+sigma**-f)-self.B_coefficient*d/e*(sigma/e)**-d)
+        return dgde * self.rhom * self.deriv_spline(M) #*M/M #log integral
+
     def ddf_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
         sigma = cc.sigmaMtophat(M,self.scale_factor)
@@ -181,9 +197,8 @@ if __name__ == "__main__":
     cosmo_dict = {"om":0.3,"ob":0.05,"ol":1.-0.3,\
                   "ok":0.0,"h":0.7,"s8":0.77,\
                   "ns":3.0,"w0":.96,"wa":0.0}
-    redshift = 0.0
 
-    MF = MF_model(cosmo_dict,redshift)
+    MF = MF_model(cosmo_dict,redshift=0.0)
 
     d,e,f,g = 1.97,1.0,0.51,1.228 #d,e,f,g
     MF.set_parameters(d,e,f,g)
