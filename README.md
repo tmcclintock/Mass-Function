@@ -10,6 +10,7 @@ Dependencies
 - numpy
 - scipy
 - Matt Becker's cosmocalc (https://github.com/beckermr/cosmocalc)
+- Tom McClintock's Emulation (https://github.com/tmcclintock/Emulation)
 
 Installation
 ------------
@@ -27,7 +28,7 @@ Usage
 An example of how to use this code can be found
 in the examples/example.py file. The module can
 either calculate dn/dM as a function of mass
-or the number density within some mass bins,
+or the number density per unit mass,
 all as a function of redshift.
 
 The result of running the example should be the following.
