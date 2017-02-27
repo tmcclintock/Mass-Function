@@ -151,8 +151,8 @@ class TMF_model(object):
     """
     def derivs_in_bins(self,lM_bins,use_numerical_derivatives=False):
         lM_bins = np.log(10**lM_bins)
-        dndp = np.zeros((4,len(lM_bins)))
-        deriv_functions = [self.ddd_dndlM_at_lM,self.dde_dndlM_at_lM,self.ddf_dndlM_at_lM,self.ddg_dndlM_at_lM]
+        dndp = np.zeros((4, len(lM_bins)))
+        deriv_functions = [self.ddd_dndlM_at_lM, self.dde_dndlM_at_lM, self.ddf_dndlM_at_lM, self.ddg_dndlM_at_lM]
         for i in range(len(lM_bins)):
             lMlow,lMhigh = lM_bins[i]
             for j in range(4):
@@ -199,11 +199,10 @@ class TMF_model(object):
         lM_bins = np.log(10**lM_bins) #switch to natural log
         return np.array([integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0] for lMlow,lMhigh in lM_bins])
 
+#An example of how to use the tinker mass function
 if __name__ == "__main__":
     #An example cosmology
-    cosmo_dict = {"om":0.3,"ob":0.05,"ol":1.-0.3,\
-                  "ok":0.0,"h":0.7,"s8":0.77,\
-                  "ns":3.0,"w0":.96,"wa":0.0}
+    cosmo_dict = {"om":0.3,"ob":0.05,"ol":1.-0.3,"ok":0.0,"h":0.7,"s8":0.77,"ns":3.0,"w0":.96,"wa":0.0}
 
     #Create a TMF object
     TMF = TMF_model(cosmo_dict,redshift=0.0)
@@ -215,22 +214,11 @@ if __name__ == "__main__":
     lM_bins = TMF.make_bins(Nbins=10,lM_low=13,lM_high=15)
     Masses = np.mean(10**lM_bins,1) #The mid points of the bins, just for plotting
     n_z0 = TMF.n_in_bins(lM_bins)
-    Cov_p = np.diag(np.ones((4))*0.01)
-    n_cov_z0 =TMF.covariance_in_bins(lM_bins,Cov_p)
-    n_err_z0 = np.sqrt(np.diagonal(n_cov_z0))
-
-    #Now at z=1.0
-    n_z1 = TMF.n_in_bins(lM_bins,redshift=1.0)
-    n_cov_z1 =TMF.covariance_in_bins(lM_bins,Cov_p)
-    n_err_z1 = np.sqrt(np.diagonal(n_cov_z1))
 
     import matplotlib.pyplot as plt
-    plt.errorbar(Masses,n_z0,n_err_z0,label=r"$z=0$")
-    plt.errorbar(Masses,n_z1,n_err_z1,label=r"$z=1$")
-    plt.xscale('log')
-    plt.yscale('log')
+    plt.loglog(Masses,n_z0)
     plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
     plt.ylabel(r"$n\ [h^3{\rm Mpc^{-3}}]$",fontsize=24)
     plt.subplots_adjust(bottom=0.15)
-    plt.legend()
+    plt.title("Mass function at z=0")
     plt.show()
