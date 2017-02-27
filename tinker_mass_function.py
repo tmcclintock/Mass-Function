@@ -64,12 +64,14 @@ class TMF_model(object):
 
         """
         self.params = np.array([d,e,f,g])
-        self.B_coefficient = 2.0/(e**d * g**(-d/2.)*special.gamma(d/2.) + g**(-f/2.)*special.gamma(f/2.))
+        gamma_d2 = special.gamma(d/2.)
+        gamma_f2 = special.gamma(f/2.)
+        self.B_coefficient = 2.0/(e**d * g**(-d/2.)*gamma_d2 + g**(-f/2.)*gamma_f2)
         B = self.B_coefficient
-        self.dBdd = B**2/4.*e**d*g**(-d/2.)*special.gamma(d/2.)*(np.log(g)-2-special.digamma(d/2.))
-        self.dBde = B**2/2.*(-d)*e**(d-1)*g**(-d/2.)*special.gamma(d/2)
-        self.dBdf = B**2/4.*g**(-f/2.)*special.gamma(f/2.)*(np.log(g)-special.digamma(f/2.))
-        self.dBdg = B**2/4.*(d*e**d*g**(-d/2.-1)*special.gamma(d/2.)+f*g**(-f/2.-1)*special.gamma(f/2.))
+        self.dBdd = B**2/4.*e**d*g**(-d/2.)*gamma_d2*(np.log(g)-2-special.digamma(d/2.))
+        self.dBde = B**2/2.*(-d)*e**(d-1)*g**(-d/2.)*gamma_d2
+        self.dBdf = B**2/4.*g**(-f/2.)*gamma_f2*(np.log(g)-special.digamma(f/2.))
+        self.dBdg = B**2/4.*(d*e**d*g**(-d/2.-1)*gamma_d2+f*g**(-f/2.-1)*gamma_f2)
         self.params_are_set = True
         return
 
@@ -157,7 +159,7 @@ class TMF_model(object):
             lMlow,lMhigh = lM_bins[i]
             for j in range(4):
                 if not use_numerical_derivatives: 
-                    dndp[j,i]= integrate.quad(deriv_functions[j],lMlow,lMhigh,args=(self.params))[0]
+                    dndp[j,i]= integrate.quad(deriv_functions[j],lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0]
                 else:
                     pc_up   = np.copy(self.params)
                     pc_down = np.copy(self.params)
@@ -165,9 +167,9 @@ class TMF_model(object):
                     pc_up[j]   += Dp/2.
                     pc_down[j] -= Dp/2.
                     self.set_parameters(pc_up[0],pc_up[1],pc_up[2],pc_up[3])
-                    upper = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
+                    upper = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0]
                     self.set_parameters(pc_down[0],pc_down[1],pc_down[2],pc_down[3])
-                    lower = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params))[0]
+                    lower = integrate.quad(self.dndlM_at_lM,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0]
                     dndp[j,i] = (upper-lower)/dp
         return dndp
 
