@@ -8,37 +8,60 @@ from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 import numpy as np
 
+#Physical constants
+G = 4.52e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
+Mpcperkm = 3.241e-20 #Mpc/km; used to convert H0 to s^-1
+#Integration tolerance
 TOL = 1e-3
 
 class TMF_model(object):
-    """
-    This function takes in low and high log_10 mass
-    values and creates bins (i.e. an Nbinsx2 array 
-    where Nbins is the number of bins).
-    """
-    def make_bins(self,Nbins,lM_low,lM_high):
-        lM_edges = np.linspace(lM_low,lM_high,Nbins+1)
-        return np.array(zip(lM_edges[:-1],lM_edges[1:]))
+    """A python implementation of the tinker mass function.
+
+    Note: This requires Matt Becker's cosmocalc.
 
     """
-    Initialization function. It requires a dictionary
-    that contains the cosmology to be passed to
-    cosmocalc, and the redshift we are working at.
 
-    Optionally you can pass in log_10 of the mass bounds
-    to build the spline between.
-    """
     def __init__(self,cosmo_dict,redshift,l10M_bounds=[11,16]):
+        """Create a TMF_model object.
+
+        Args:
+            cosmo_dict (dictionary): Keys are cosmological parameters, specifically om for Omega_matter and h for Hubble constant/100.
+            redshift (float): Redshift of the mass function.
+            l10M_bounds (array_like): Log10 of the upper and lower mass bounds for the splines, defaults to [11,16]. Mass units are Msun/h.
+
+        """
         self.l10M_bounds = l10M_bounds #log_10 Mass bounds in Msun/h
         self.redshift = redshift
         self.scale_factor = 1./(1.+self.redshift)
         self.set_new_cosmology(cosmo_dict)
         self.params_are_set = False
 
-    def set_parameters(self,d,e,f,g):
+    def make_bins(self,Nbins,lM_low,lM_high):
+        """Create mass bins, in Msun/h.
+
+        Args:
+            Nbins (int): Number of mass bins.
+            lM_low (float): Log10 of the lowest edge.
+            lM_high (float): Log10 of the highest edge.
+
+        Returns:
+            lM_bins (array_like): Array of bin edges. Shape is Nbins by 2.
+
         """
-        Specify the tinker parameters and calculate
+        lM_edges = np.linspace(lM_low,lM_high,Nbins+1)
+        return np.array(zip(lM_edges[:-1],lM_edges[1:]))
+
+
+    def set_parameters(self,d,e,f,g):
+        """Specify the tinker parameters and calculate
         quantities that only depend on them.
+
+        Args:
+            d (float): Tinker parameter.
+            e (float): Tinker parameter.
+            f (float): Tinker parameter.
+            g (float): Tinker parameter.
+
         """
         self.params = np.array([d,e,f,g])
         self.B_coefficient = 2.0/(e**d * g**(-d/2.)*special.gamma(d/2.) + g**(-f/2.)*special.gamma(f/2.))
@@ -51,19 +74,28 @@ class TMF_model(object):
         return
 
     def set_new_cosmology(self,cosmo_dict):
-        G = 4.52e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
-        Mpcperkm = 3.241e-20 #Mpc/km; used to convert H0 to s^-1
-        cc.set_cosmology(cosmo_dict) #Used to create the splines in cosmocalc
-        Om,H0 = cosmo_dict["om"],cosmo_dict["h"]*100.0
+        """Specify a new set of cosmological parameters and then build splines that depend on these.
+        
+        Args:
+            cosmo_dict (dictionary): Keys are cosmological parameters, specifically om for Omega_matter and h for Hubble constant/100.
+
+        """
+        cc.set_cosmology(cosmo_dict)
+        Om = cosmo_dict["om"]
+        H0 = cosmo_dict["h"]*100.0
         self.rhom=Om*3.*(H0*Mpcperkm)**2/(8*np.pi*G*(H0/100.)**2)#Msunh^2/Mpc^3
         self.cosmo_dict = cosmo_dict
         self.build_splines()
         return
 
     def build_splines(self):
+        """Build the splines needed for integrals over mass bins.
+
+        """
         lM_min,lM_max = self.l10M_bounds
         M_domain = np.logspace(lM_min-1,lM_max+1,500,base=10)
         sigmaM = np.array([cc.sigmaMtophat_exact(M,self.scale_factor) for M in M_domain])
+        self.sigmaM_spline = IUS(M_domain,sigmaM)
         ln_sig_inv_spline = IUS(M_domain,-np.log(sigmaM))
         deriv_spline = ln_sig_inv_spline.derivative()
         self.deriv_spline = deriv_spline
@@ -76,28 +108,28 @@ class TMF_model(object):
     """
     def ddd_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
-        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        sigma = self.sigmaM_spline(M)
         d,e,f,g = params
         dgdd = np.exp(-g/sigma**2)*(self.dBdd*((sigma/e)**-d+sigma**-f)-self.B_coefficient*(sigma/e)**-d)
         return dgdd * self.rhom * self.deriv_spline(M) #*M/M #log integral
 
     def dde_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
-        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        sigma = self.sigmaM_spline(M)
         d,e,f,g = params
         dgde = np.exp(-g/sigma**2)*(self.dBde*((sigma/e)**-d+sigma**-f)-self.B_coefficient*d/e*(sigma/e)**-d)
         return dgde * self.rhom * self.deriv_spline(M) #*M/M #log integral
 
     def ddf_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
-        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        sigma = self.sigmaM_spline(M)
         d,e,f,g = params
         dgdf = self.dBdf*((sigma/e)**-d+sigma**-f)*np.exp(-g/sigma**2) - self.B_coefficient*sigma**-f*np.log(sigma)*np.exp(-g/sigma**2)
         return dgdf * self.rhom * self.deriv_spline(M) #*M/M #log integral
 
     def ddg_dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
-        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        sigma = self.sigmaM_spline(M)
         d,e,f,g = params
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         dg_sigmadg = -g_sigma/sigma**2 + self.dBdg*np.exp(-g/sigma**2)*((sigma/e)**-d + sigma**-f)
@@ -109,7 +141,7 @@ class TMF_model(object):
     """
     def dndlM_at_lM(self,lM,params):
         M = np.exp(lM)
-        sigma = cc.sigmaMtophat(M,self.scale_factor)
+        sigma = self.sigmaM_spline(M)
         d,e,f,g = params
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         return g_sigma * self.rhom * self.deriv_spline(M)
