@@ -45,7 +45,7 @@ class TMF_model(object):
             lM_high (float): Log10 of the highest edge.
 
         Returns:
-            lM_bins (array_like): Array of bin edges. Shape is Nbins by 2.
+            lM_bins (array_like): Array of bin edges. Shape is Nbins by 2. Mass untis are Msun/h.
 
         """
         lM_edges = np.linspace(lM_low,lM_high,Nbins+1)
@@ -148,10 +148,17 @@ class TMF_model(object):
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         return g_sigma * self.rhom * self.deriv_spline(M)
 
-    """
-    This gives the uncertainty in the calculated quantity in each bin.
-    """
     def derivs_in_bins(self,lM_bins,use_numerical_derivatives=False):
+        """Compute the derivatives of the mass function in each bin with respect to each tinker parameter.
+
+        Args:
+            lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
+            use_numerical_derivatives (boolean; optional): Flag to use numerical instead of analytic derivatives. Default is False.
+
+        Returns:
+            dndp (array_like): 2D array that is 4 by Nbins of the derivatives of the mass function with respect to each tinker parameter.
+
+        """
         lM_bins = np.log(10**lM_bins)
         dndp = np.zeros((4, len(lM_bins)))
         deriv_functions = [self.ddd_dndlM_at_lM, self.dde_dndlM_at_lM, self.ddf_dndlM_at_lM, self.ddg_dndlM_at_lM]
@@ -173,12 +180,17 @@ class TMF_model(object):
                     dndp[j,i] = (upper-lower)/dp
         return dndp
 
-    """
-    Similar to the above, this gives the full
-    covariance matrix between the bins.
-    Cov_p contains the covariance matrix between d,e,f,g.
-    """
     def covariance_in_bins(self,lM_bins,Cov_p):
+        """Compute the covariance between each mass bin.
+        
+        Args:
+            lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
+            Cov_p (array_like): Either the variances of the tinker parameters or a matrix with covariances between all tinker parameters.
+
+        Returns:
+            Cov_NN (array_like): Matrix that is Nbins by Nbins of the covariances between all mass bins.
+
+        """
         dndp = self.derivs_in_bins(lM_bins)
         if len(np.shape(Cov_p)) == 1: Cov_p = np.diag(Cov_p)
         cov = np.zeros((len(lM_bins),len(lM_bins)))
@@ -187,11 +199,17 @@ class TMF_model(object):
                 cov[i,j] = np.dot(dndp[:,i],np.dot(Cov_p,dndp[:,j]))
         return cov
 
-    """
-    Returns the number density [#/(Mpv/h)^3]
-    of halos within the mass bins.
-    """
     def n_in_bins(self,lM_bins,redshift=None):
+        """Compute the tinker mass function in each mass bin.
+
+        Args:
+            lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
+            redshift (float; optional): Redshift of the mass function. Default is the redshift at initialization.
+
+        Returns:
+            n (array_like): Tinker halo mass function at each mass bin. Units are number/ (Mpc/h)^3.
+
+        """
         if not self.params_are_set: raise ValueError("Must set parameters before modeling.")
         if redshift is not None:
             if redshift != self.redshift:
