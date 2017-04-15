@@ -120,7 +120,6 @@ class tinker_mass_function(object):
 
         Returns:
             dndp (array_like): 2D array that is 4 by Nbins of the derivatives of the mass function with respect to each tinker parameter.
-
         """
         lM_bins = np.log(10**lM_bins)
         dndp = np.zeros((4, len(lM_bins)))
@@ -151,7 +150,6 @@ class tinker_mass_function(object):
 
         Returns:
             Cov_NN (array_like): Matrix that is Nbins by Nbins of the covariances between all mass bins.
-
         """
         dndp = self.derivs_in_bins(lM_bins, use_numerical_derivatives)
         if len(np.shape(Cov_p)) == 1: Cov_p = np.diag(Cov_p)
@@ -170,7 +168,6 @@ class tinker_mass_function(object):
 
         Returns:
             n (array_like): Tinker halo mass function at each mass bin. Units are number/ (Mpc/h)^3.
-
         """
         if redshift is not None:
             if redshift != self.redshift:
@@ -178,7 +175,7 @@ class tinker_mass_function(object):
                 self.scale_factor = 1./(1.+redshift)
                 self.build_splines()
         lM_bins = np.log(10**lM_bins) #switch to natural log
-        return np.array([integrate.quad(self.dndlM,lMlow,lMhigh,args=(self.params),epsabs=TOL,epsrel=TOL/10.)[0] for lMlow,lMhigh in lM_bins])
+        return np.array([integrate.quad(self.dndlM,lMlow,lMhigh,args=(self.params))[0] for lMlow,lMhigh in lM_bins])
 
 #An example of how to use the tinker mass function
 if __name__ == "__main__":
