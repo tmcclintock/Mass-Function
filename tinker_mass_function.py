@@ -153,7 +153,6 @@ if __name__ == "__main__":
 
     lM = np.log(np.logspace(12, 15, num=20))
     dndlM = TMF.dndlM(lM)
-    print dndlM
 
     import matplotlib.pyplot as plt
     plt.loglog(np.exp(lM),dndlM)
