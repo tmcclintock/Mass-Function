@@ -17,7 +17,6 @@ class tinker_mass_function(object):
     """A python implementation of the tinker mass function.
 
     Note: This requires Matt Becker's cosmocalc.
-
     """
 
     def __init__(self,cosmo_dict,redshift=0.0,l10M_bounds=[11,16]):
@@ -30,7 +29,6 @@ class tinker_mass_function(object):
             cosmo_dict (dictionary): Dictionary of cosmological parameters. Only keys necessary to function are "om" and "h" for Omega_m and H0/100.
             redshift (float): Redshift of the mass function; default 0.0.
             l10M_bounds (array_like): Log10 of the upper and lower mass bounds for the splines; defaults to [11,16].
-
         """
         self.l10M_bounds = l10M_bounds #log_10 Mass bounds in Msun/h
         self.redshift = redshift
@@ -47,7 +45,6 @@ class tinker_mass_function(object):
             e (float): Tinker parameter.
             f (float): Tinker parameter.
             g (float): Tinker parameter.
-
         """
         self.params = np.array([d,e,f,g])
         gamma_d2 = special.gamma(d*0.5)
@@ -69,7 +66,6 @@ class tinker_mass_function(object):
         
         Args:
             cosmo_dict (dictionary): Keys are cosmological parameters, specifically om for Omega_matter and h for Hubble constant/100.
-
         """
         cc.set_cosmology(cosmo_dict)
         Om = cosmo_dict["om"]
@@ -81,7 +77,6 @@ class tinker_mass_function(object):
 
     def build_splines(self):
         """Build the splines needed for integrals over mass bins.
-
         """
         lM_min,lM_max = self.l10M_bounds
         M_domain = np.logspace(lM_min-1,lM_max+1,500,base=10)
@@ -90,7 +85,6 @@ class tinker_mass_function(object):
         ln_sig_inv_spline = IUS(M_domain,-np.log(sigmaM))
         deriv_spline = ln_sig_inv_spline.derivative()
         self.deriv_spline = deriv_spline
-        self.splines_built = True
         return
 
     def dndlM(self, lM, params=None):
