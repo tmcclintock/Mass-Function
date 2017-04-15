@@ -50,18 +50,18 @@ class tinker_mass_function(object):
 
         """
         self.params = np.array([d,e,f,g])
-        gamma_d2 = special.gamma(d/2.)
-        gamma_f2 = special.gamma(f/2.)
+        gamma_d2 = special.gamma(d*0.5)
+        gamma_f2 = special.gamma(f*0.5)
         log_g = np.log(g)
-        gnd2 = g**(-d/2.)
-        gnf2 = g**(-f/2.)
+        gnd2 = g**(-d*0.5)
+        gnf2 = g**(-f*0.5)
         ed = e**d
         self.B_coefficient = 2.0/(ed * gnd2 * gamma_d2 + gnf2 * gamma_f2)
         B2 = self.B_coefficient**2
-        self.dBdd = B2 / 4.* ed * gnd2 * gamma_d2 * (log_g - 2 - special.digamma(d/2.))
-        self.dBde = B2 / -2. * d * ed/e * gnd2 * gamma_d2
-        self.dBdf = B2 / 4. * gnf2 * gamma_f2 * (log_g - special.digamma(f/2.))
-        self.dBdg = B2 / 4. * (d * ed * gnd2/g * gamma_d2+ f* gnf2/g * gamma_f2)
+        self.dBdd = 0.25 * B2 * ed * gnd2 * gamma_d2 * (log_g - 2.0 - special.digamma(d*0.5))
+        self.dBde = -0.5 * B2 * d * ed/e * gnd2 * gamma_d2
+        self.dBdf = 0.25 * B2 * gnf2 * gamma_f2 * (log_g - special.digamma(f*0.5))
+        self.dBdg = 0.25 * B2 * (d * ed * gnd2/g * gamma_d2+ f* gnf2/g * gamma_f2)
         return
 
     def set_new_cosmology(self,cosmo_dict):
