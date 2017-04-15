@@ -155,7 +155,6 @@ if __name__ == "__main__":
     dndlM = TMF.dndlM(lM)
     print dndlM
 
-    """
     import matplotlib.pyplot as plt
     plt.loglog(np.exp(lM),dndlM)
     plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
@@ -163,4 +162,3 @@ if __name__ == "__main__":
     plt.subplots_adjust(bottom=0.15)
     plt.title("Mass function at z=0")
     plt.show()
-    """
