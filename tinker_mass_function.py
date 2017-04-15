@@ -19,7 +19,7 @@ class tinker_mass_function(object):
     Note: This requires Matt Becker's cosmocalc.
     """
 
-    def __init__(self,cosmo_dict,redshift=0.0,l10M_bounds=[11,16]):
+    def __init__(self, cosmo_dict, redshift=0.0, l10M_bounds=[11,16]):
         """Create a TMF_model object.
 
         Note: the model is created with the default tinker2008_appendix mass function parameters.
@@ -58,7 +58,7 @@ class tinker_mass_function(object):
         self.dBdd = 0.25 * B2 * ed * gnd2 * gamma_d2 * (log_g - 2.0 - special.digamma(d*0.5))
         self.dBde = -0.5 * B2 * d * ed/e * gnd2 * gamma_d2
         self.dBdf = 0.25 * B2 * gnf2 * gamma_f2 * (log_g - special.digamma(f*0.5))
-        self.dBdg = 0.25 * B2 * (d * ed * gnd2/g * gamma_d2+ f* gnf2/g * gamma_f2)
+        self.dBdg = 0.25 * B2 * (d * ed * gnd2/g * gamma_d2 + f* gnf2/g * gamma_f2)
         return
 
     def set_new_cosmology(self,cosmo_dict):
@@ -107,52 +107,22 @@ class tinker_mass_function(object):
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         return g_sigma * self.rhom * self.deriv_spline(M)
 
-    def derivs_in_bins(self, lM_bins, use_numerical_derivatives=False):
-        """Compute the derivatives of the mass function in each bin with respect to each tinker parameter.
-
-        Args:
-            lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
-            use_numerical_derivatives (boolean; optional): Flag to use numerical instead of analytic derivatives. Default is False.
-
-        Returns:
-            dndp (array_like): 2D array that is 4 by Nbins of the derivatives of the mass function with respect to each tinker parameter.
-        """
-        lM_bins = np.log(10**lM_bins)
-        dndp = np.zeros((4, len(lM_bins)))
-        deriv_functions = [ddd_dndlM, dde_dndlM, ddf_dndlM, ddg_dndlM]
-        for i in range(len(lM_bins)):
-            lMlow,lMhigh = lM_bins[i]
-            for j in range(4):
-                if not use_numerical_derivatives: 
-                    dndp[j,i]= integrate.quad(deriv_functions[j], lMlow, lMhigh, args=(self, self.params))[0]
-                else:
-                    params_hi   = np.copy(self.params)
-                    params_lo = np.copy(self.params)
-                    Dp = 0.01 * self.params[j]
-                    params_hi[j]   += Dp/2.
-                    params_lo[j] -= Dp/2.
-                    upper = integrate.quad(self.dndlM, lMlow, lMhigh, args=(params_hi))[0]
-                    lower = integrate.quad(self.dndlM, lMlow, lMhigh, args=(params_lo))[0]
-                    dndp[j,i] = (upper-lower)/Dp
-        return dndp
-
     def covariance_in_bins(self, lM_bins, Cov_p, use_numerical_derivatives=False):
         """Compute the covariance between each mass bin.
-        
-        Args:
-            lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
+            Args:
+                lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
             Cov_p (array_like): Either the variances of the tinker parameters or a matrix with covariances between all tinker parameters.
-            use_numerical_derivatives (boolean): Flag to decide how to take the derivatives; default False.
+                use_numerical_derivatives (boolean): Flag to decide how to take the derivatives; default False.
 
-        Returns:
-            Cov_NN (array_like): Matrix that is Nbins by Nbins of the covariances between all mass bins.
+            Returns:
+                Cov_NN (array_like): Matrix that is Nbins by Nbins of the covariances between all mass bins.
         """
-        dndp = self.derivs_in_bins(lM_bins, use_numerical_derivatives)
+        dndp = derivs_in_bins(self, lM_bins, use_numerical_derivatives)
         if len(np.shape(Cov_p)) == 1: Cov_p = np.diag(Cov_p)
         cov = np.zeros((len(lM_bins),len(lM_bins)))
         for i in range(len(lM_bins)):
             for j in range(len(lM_bins)):
-                cov[i,j] = np.dot(dndp[:,i],np.dot(Cov_p,dndp[:,j]))
+                cov[i,j] = np.dot(dndp[i], np.dot(Cov_p, dndp[j]))
         return cov
 
     def n_in_bins(self, lM_bins, redshift=None):
