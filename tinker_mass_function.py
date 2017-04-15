@@ -10,10 +10,8 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 import numpy as np
 
 #Physical constants
-G = 4.52e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
-Mpcperkm = 3.241e-20 #Mpc/km; used to convert H0 to s^-1
-#Integration tolerance
-TOL = 1e-3
+G = 4.51701e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
+Mpcperkm = 3.24077927001e-20 #Mpc/km; used to convert H0 to s^-1
 
 class tinker_mass_function(object):
     """A python implementation of the tinker mass function.
@@ -54,12 +52,16 @@ class tinker_mass_function(object):
         self.params = np.array([d,e,f,g])
         gamma_d2 = special.gamma(d/2.)
         gamma_f2 = special.gamma(f/2.)
-        self.B_coefficient = 2.0/(e**d * g**(-d/2.)*gamma_d2 + g**(-f/2.)*gamma_f2)
-        B = self.B_coefficient
-        self.dBdd = B**2/4.*e**d*g**(-d/2.)*gamma_d2*(np.log(g)-2-special.digamma(d/2.))
-        self.dBde = B**2/2.*(-d)*e**(d-1)*g**(-d/2.)*gamma_d2
-        self.dBdf = B**2/4.*g**(-f/2.)*gamma_f2*(np.log(g)-special.digamma(f/2.))
-        self.dBdg = B**2/4.*(d*e**d*g**(-d/2.-1)*gamma_d2+f*g**(-f/2.-1)*gamma_f2)
+        log_g = np.log(g)
+        gnd2 = g**(-d/2.)
+        gnf2 = g**(-f/2.)
+        ed = e**d
+        self.B_coefficient = 2.0/(ed * gnd2 * gamma_d2 + gnf2 * gamma_f2)
+        B2 = self.B_coefficient**2
+        self.dBdd = B2 / 4.* ed * gnd2 * gamma_d2 * (log_g - 2 - special.digamma(d/2.))
+        self.dBde = B2 / -2. * d * ed/e * gnd2 * gamma_d2
+        self.dBdf = B2 / 4. * gnf2 * gamma_f2 * (log_g - special.digamma(f/2.))
+        self.dBdg = B2 / 4. * (d * ed * gnd2/g * gamma_d2+ f* gnf2/g * gamma_f2)
         return
 
     def set_new_cosmology(self,cosmo_dict):
