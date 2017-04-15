@@ -19,7 +19,7 @@ class CleanCommand(Command):
 setup(name='tinker_mass_function',
       install_requires=['numpy','scipy','cosmocalc'],
       version='1.0',
-      py_modules=['tinker_mass_function'],
+      py_modules=['tinker_mass_function','TMF_extras'],
       description='An implementation of the Tinker2010 mass function.',
       long_description=read('README.md'),
       author='Tom McClintock',
