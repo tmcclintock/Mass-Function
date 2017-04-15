@@ -222,7 +222,7 @@ class TMF_model(object):
 #An example of how to use the tinker mass function
 if __name__ == "__main__":
     #An example cosmology
-    cosmo_dict = {"om":0.3,"ob":0.05,"ol":1.-0.3,"ok":0.0,"h":0.7,"s8":0.77,"ns":3.0,"w0":.96,"wa":0.0}
+    cosmo_dict = {"om":0.3,"ob":0.05,"ol":1.-0.3,"ok":0.0,"h":0.7,"s8":0.77,"ns":0.96,"w0":-1.0,"wa":0.0}
 
     #Create a TMF object
     TMF = TMF_model(cosmo_dict,redshift=0.0)
