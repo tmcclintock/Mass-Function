@@ -30,7 +30,7 @@ class tinker_mass_function(object):
             redshift (float): Redshift of the mass function; default 0.0.
             l10M_bounds (array_like): Log10 of the upper and lower mass bounds for the splines; defaults to [11,16].
         """
-        self.l10M_bounds = l10M_bounds #log_10 Mass bounds in Msun/h
+        self.l10M_bounds = np.array(l10M_bounds) #log_10 Mass bounds in Msun/h
         self.redshift = redshift
         self.scale_factor = 1./(1.+self.redshift)
         self.set_new_cosmology(cosmo_dict)
@@ -79,10 +79,10 @@ class tinker_mass_function(object):
         """Build the splines needed for integrals over mass bins.
         """
         lM_min,lM_max = self.l10M_bounds
-        M_domain = np.logspace(lM_min-1,lM_max+1,500,base=10)
-        sigmaM = np.array([cc.sigmaMtophat_exact(M,self.scale_factor) for M in M_domain])
-        self.sigmaM_spline = IUS(M_domain,sigmaM)
-        ln_sig_inv_spline = IUS(M_domain,-np.log(sigmaM))
+        M_domain = np.logspace(lM_min-1, lM_max+1, num=500)
+        sigmaM = np.array([cc.sigmaMtophat_exact(M, self.scale_factor) for M in M_domain])
+        self.sigmaM_spline = IUS(M_domain, sigmaM)
+        ln_sig_inv_spline = IUS(M_domain, -np.log(sigmaM))
         deriv_spline = ln_sig_inv_spline.derivative()
         self.deriv_spline = deriv_spline
         return
@@ -153,7 +153,9 @@ if __name__ == "__main__":
 
     lM = np.log(np.logspace(12, 15, num=20))
     dndlM = TMF.dndlM(lM)
+    print dndlM
 
+    """
     import matplotlib.pyplot as plt
     plt.loglog(np.exp(lM),dndlM)
     plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
@@ -161,3 +163,4 @@ if __name__ == "__main__":
     plt.subplots_adjust(bottom=0.15)
     plt.title("Mass function at z=0")
     plt.show()
+    """
