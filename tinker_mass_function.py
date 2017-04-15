@@ -32,11 +32,11 @@ class tinker_mass_function(object):
         """
         self.l10M_bounds = np.array(l10M_bounds) #log_10 Mass bounds in Msun/h
         self.redshift = redshift
-        self.scale_factor = 1./(1.+self.redshift)
+        self.scale_factor = 1./(1. + self.redshift)
         self.set_new_cosmology(cosmo_dict)
-        self.set_parameters(1.97,1.0,0.51,1.228)
+        self.set_parameters(1.97, 1.0, 0.51, 1.228)
 
-    def set_parameters(self,d,e,f,g):
+    def set_parameters(self, d, e, f, g):
         """Specify the tinker parameters and calculate
         quantities that only depend on them.
 
@@ -46,7 +46,7 @@ class tinker_mass_function(object):
             f (float): Tinker parameter.
             g (float): Tinker parameter.
         """
-        self.params = np.array([d,e,f,g])
+        self.params = np.array([d, e, f, g])
         gamma_d2 = special.gamma(d*0.5)
         gamma_f2 = special.gamma(f*0.5)
         log_g = np.log(g)
@@ -61,7 +61,7 @@ class tinker_mass_function(object):
         self.dBdg = 0.25 * B2 * (d * ed * gnd2/g * gamma_d2 + f* gnf2/g * gamma_f2)
         return
 
-    def set_new_cosmology(self,cosmo_dict):
+    def set_new_cosmology(self, cosmo_dict):
         """Specify a new set of cosmological parameters and then build splines that depend on these.
         
         Args:
@@ -80,7 +80,8 @@ class tinker_mass_function(object):
         """
         lM_min,lM_max = self.l10M_bounds
         M_domain = np.logspace(lM_min-1, lM_max+1, num=500)
-        sigmaM = np.array([cc.sigmaMtophat_exact(M, self.scale_factor) for M in M_domain])
+        sigmaM = np.array([cc.sigmaMtophat_exact(M, self.scale_factor) 
+                           for M in M_domain])
         self.sigmaM_spline = IUS(M_domain, sigmaM)
         ln_sig_inv_spline = IUS(M_domain, -np.log(sigmaM))
         deriv_spline = ln_sig_inv_spline.derivative()
@@ -100,10 +101,10 @@ class tinker_mass_function(object):
         """
         M = np.exp(lM)
         sigma = self.sigmaM_spline(M)
-        if params is None: d,e,f,g = self.params
+        if params is None: d, e, f, g = self.params
         else: 
-            d,e,f,g = params
-            self.set_parameters(d,e,f,g)
+            d, e, f, g = params
+            self.set_parameters(d, e, f, g)
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         return g_sigma * self.rhom * self.deriv_spline(M)
 
