@@ -36,22 +36,6 @@ class TMF_model(object):
         self.set_new_cosmology(cosmo_dict)
         self.params_are_set = False
 
-    def make_bins(self,Nbins,lM_low,lM_high):
-        """Create mass bins, in Msun/h.
-
-        Args:
-            Nbins (int): Number of mass bins.
-            lM_low (float): Log10 of the lowest edge.
-            lM_high (float): Log10 of the highest edge.
-
-        Returns:
-            lM_bins (array_like): Array of bin edges. Shape is Nbins by 2. Mass untis are Msun/h.
-
-        """
-        lM_edges = np.linspace(lM_low,lM_high,Nbins+1)
-        return np.array(zip(lM_edges[:-1],lM_edges[1:]))
-
-
     def set_parameters(self,d,e,f,g):
         """Specify the tinker parameters and calculate
         quantities that only depend on them.
@@ -231,7 +215,9 @@ if __name__ == "__main__":
     TMF.set_parameters(1.97,1.0,0.51,1.228)
 
     #Some pretend bins in log_10 M_sun/h
-    lM_bins = TMF.make_bins(Nbins=10,lM_low=13,lM_high=15)
+    lM_bins = np.logspace(np.log10(1e13), np.log10(1e15), 11)
+    lM_bins = np.array([lM_bins[:-1], lM_bins[1:]]).T
+    lM_bins = np.log10(lM_bins)
     Masses = np.mean(10**lM_bins,1) #The mid points of the bins, just for plotting
     n_z0 = TMF.n_in_bins(lM_bins)
 
