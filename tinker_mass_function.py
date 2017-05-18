@@ -34,9 +34,9 @@ class tinker_mass_function(object):
         self.redshift = redshift
         self.scale_factor = 1./(1. + self.redshift)
         self.set_new_cosmology(cosmo_dict)
-        self.set_parameters(1.97, 1.0, 0.51, 1.228)
+        self.set_parameters(1.97, 1.0, 0.51, 1.228, 0.482)
 
-    def set_parameters(self, d, e, f, g):
+    def set_parameters(self, d, e, f, g, B=None):
         """Specify the tinker parameters and calculate
         quantities that only depend on them.
 
@@ -45,6 +45,9 @@ class tinker_mass_function(object):
             e (float): Tinker parameter.
             f (float): Tinker parameter.
             g (float): Tinker parameter.
+            B (float; optional): Normalization coefficient. If B isn't specified then 
+               it's calculated from d,e,f,g such that the mass function is gauranteed 
+               to be normalized.
         """
         self.params = np.array([d, e, f, g])
         gamma_d2 = special.gamma(d*0.5)
@@ -53,12 +56,17 @@ class tinker_mass_function(object):
         gnd2 = g**(-d*0.5)
         gnf2 = g**(-f*0.5)
         ed = e**d
-        self.B_coefficient = 2.0/(ed * gnd2 * gamma_d2 + gnf2 * gamma_f2)
-        B2 = self.B_coefficient**2
-        self.dBdd = 0.25 * B2 * ed * gnd2 * gamma_d2 * (log_g - 2.0 - special.digamma(d*0.5))
-        self.dBde = -0.5 * B2 * d * ed/e * gnd2 * gamma_d2
-        self.dBdf = 0.25 * B2 * gnf2 * gamma_f2 * (log_g - special.digamma(f*0.5))
-        self.dBdg = 0.25 * B2 * (d * ed * gnd2/g * gamma_d2 + f* gnf2/g * gamma_f2)
+        if not B:
+            self.B_coefficient = 2.0/(ed * gnd2 * gamma_d2 + gnf2 * gamma_f2)
+            print self.B_coefficient
+            B2 = self.B_coefficient**2
+            self.dBdd = 0.25 * B2 * ed * gnd2 * gamma_d2 * (log_g - 2.0 - special.digamma(d*0.5))
+            self.dBde = -0.5 * B2 * d * ed/e * gnd2 * gamma_d2
+            self.dBdf = 0.25 * B2 * gnf2 * gamma_f2 * (log_g - special.digamma(f*0.5))
+            self.dBdg = 0.25 * B2 * (d * ed * gnd2/g * gamma_d2 + f* gnf2/g * gamma_f2)
+        else:
+            self.B_coefficient = B
+            self.dBdd = self.dBde = self.dBdf = self.dBdg = 0
         return
 
     def set_new_cosmology(self, cosmo_dict):
@@ -159,6 +167,6 @@ if __name__ == "__main__":
     plt.loglog(np.exp(lM),dndlM)
     plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
     plt.ylabel(r"$n\ [h^3{\rm Mpc^{-3}}]$",fontsize=24)
-    plt.subplots_adjust(bottom=0.15)
+    plt.subplots_adjust(bottom=0.15, left=0.15)
     plt.title("Mass function at z=0")
     plt.show()
