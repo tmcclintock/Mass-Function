@@ -58,7 +58,6 @@ class tinker_mass_function(object):
         ed = e**d
         if not B:
             self.B_coefficient = 2.0/(ed * gnd2 * gamma_d2 + gnf2 * gamma_f2)
-            print self.B_coefficient
             B2 = self.B_coefficient**2
             self.dBdd = 0.25 * B2 * ed * gnd2 * gamma_d2 * (log_g - 2.0 - special.digamma(d*0.5))
             self.dBde = -0.5 * B2 * d * ed/e * gnd2 * gamma_d2
