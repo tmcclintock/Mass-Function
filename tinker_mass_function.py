@@ -134,7 +134,7 @@ class tinker_mass_function(object):
                 cov[i,j] = np.dot(dndp[i], np.dot(Cov_p, dndp[j]))
         return cov
 
-    def n_in_bins(self, lM_bins, redshift=None):
+    def n_in_bins(self, lM_bins, redshift=None, params=None):
         """Compute the tinker mass function in each mass bin.
 
         Args:
@@ -150,7 +150,7 @@ class tinker_mass_function(object):
                 self.scale_factor = 1./(1.+redshift)
                 self.build_splines()
         lM_bins = np.log(10**lM_bins) #switch to natural log
-        return np.array([integrate.quad(self.dndlM,lMlow,lMhigh,args=(self.params))[0] for lMlow,lMhigh in lM_bins])
+        return np.array([integrate.quad(self.dndlM,lMlow,lMhigh,args=(params))[0] for lMlow,lMhigh in lM_bins])
 
 #An example of how to use the tinker mass function
 if __name__ == "__main__":
