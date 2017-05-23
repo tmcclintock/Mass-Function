@@ -49,7 +49,7 @@ class tinker_mass_function(object):
                it's calculated from d,e,f,g such that the mass function is gauranteed 
                to be normalized.
         """
-        self.params = np.array([d, e, f, g])
+        self.params = np.array([d, e, f, g, B])
         gamma_d2 = special.gamma(d*0.5)
         gamma_f2 = special.gamma(f*0.5)
         log_g = np.log(g)
@@ -108,10 +108,11 @@ class tinker_mass_function(object):
         """
         M = np.exp(lM)
         sigma = self.sigmaM_spline(M)
-        if params is None: d, e, f, g = self.params
+        if params is None: 
+            d, e, f, g, B = self.params
         else: 
-            d, e, f, g = params
-            self.set_parameters(d, e, f, g)
+            d, e, f, g, B = params
+            self.set_parameters(d, e, f, g, B)
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         return g_sigma * self.rhom * self.deriv_spline(M)
 
