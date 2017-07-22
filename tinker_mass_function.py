@@ -135,7 +135,13 @@ class tinker_mass_function(object):
         return cov
 
     def n_in_bins(self, lM_bins, redshift=None, params=None):
-        """Compute the tinker mass function in each mass bin.
+        """
+        IMPORTANT: need to change this funtion. It should switch
+        to using a spline for dn/dm and then using
+        the integrate function from scipy.
+
+
+        Compute the tinker mass function in each mass bin.
 
         Args:
             lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
