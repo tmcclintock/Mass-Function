@@ -116,6 +116,14 @@ class tinker_mass_function(object):
         g_sigma = self.B_coefficient*((sigma/e)**-d + sigma**-f) * np.exp(-g/sigma**2)
         return g_sigma * self.rhom * self.deriv_spline(M)
 
+    def make_dndlM_spline(self):
+        """Creates a spline for dndlM so that the integrals
+        over mass bins are faster
+        """
+        print "not implemented yet"
+        
+        return
+
     def covariance_in_bins(self, lM_bins, Cov_p, use_numerical_derivatives=False):
         """Compute the covariance between each mass bin.
             Args:
