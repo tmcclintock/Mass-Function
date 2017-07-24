@@ -176,17 +176,20 @@ if __name__ == "__main__":
     #Create a TMF object
     TMF = tinker_mass_function(cosmo_dict,redshift=0.0)
 
-    lM = np.log(np.logspace(12, 15, num=20))
+    lM = np.log(np.logspace(12, 15, num=3000))
     dndlM = TMF.dndlM(lM)
 
-    import matplotlib.pyplot as plt
-    plt.loglog(np.exp(lM),dndlM)
     TMF.make_dndlM_spline()
-    lM2 = np.log(np.logspace(12, 15, num=3000))
-    dndlM2 = np.array([TMF.dndlM_spline(lMi) for lMi in lM2])
-    plt.loglog(np.exp(lM2),dndlM2, ls='--')
-    plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
-    plt.ylabel(r"$n\ [h^3{\rm Mpc^{-3}}]$",fontsize=24)
-    plt.subplots_adjust(bottom=0.15, left=0.15)
+    dndlM2 = np.array([TMF.dndlM_spline(lMi) for lMi in lM])
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(2, sharex=True)
+    ax[0].loglog(np.exp(lM),dndlM)
+    ax[0].loglog(np.exp(lM),dndlM2, ls='--')
+    ax[1].set_xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
+    ax[0].set_ylabel(r"$n\ [h^3{\rm Mpc^{-3}}]$",fontsize=24)
+    ax[1].plot(np.exp(lM), (dndlM-dndlM2)/dndlM, c='k')
+    ax[1].set_ylabel(r"$\%\ {\rm Diff}$", fontsize=24)
+    plt.subplots_adjust(bottom=0.15, left=0.19, hspace=0.02)
     plt.title("Mass function at z=0")
     plt.show()
