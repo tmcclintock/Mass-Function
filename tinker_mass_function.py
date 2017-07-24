@@ -121,9 +121,9 @@ class tinker_mass_function(object):
         over mass bins are faster
         """
         bounds = np.log(10**self.l10M_bounds)
-        lM = np.linspace(bounds[0], bounds[1])
-        print "not implemented yet"
+        lM = np.linspace(bounds[0], bounds[1], num=100)
         dndlM = np.array([self.dndlM(lMi) for lMi in lM])
+        self.dndlM_spline = IUS(lM, dndlM)
         return lM, dndlM
 
     def covariance_in_bins(self, lM_bins, Cov_p, use_numerical_derivatives=False):
@@ -181,7 +181,9 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     plt.loglog(np.exp(lM),dndlM)
-    lM2, dndlM2 = TMF.make_dndlM_spline()
+    TMF.make_dndlM_spline()
+    lM2 = np.log(np.logspace(12, 15, num=3000))
+    dndlM2 = np.array([TMF.dndlM_spline(lMi) for lMi in lM2])
     plt.loglog(np.exp(lM2),dndlM2, ls='--')
     plt.xlabel(r"$M\ [h^{-1}{\rm M}_\odot]$",fontsize=24)
     plt.ylabel(r"$n\ [h^3{\rm Mpc^{-3}}]$",fontsize=24)
