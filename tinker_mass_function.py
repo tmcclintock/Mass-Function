@@ -66,6 +66,7 @@ class tinker_mass_function(object):
         else:
             self.B_coefficient = B
             self.dBdd = self.dBde = self.dBdf = self.dBdg = 0
+        self.make_dndlM_spline()
         return
 
     def set_new_cosmology(self, cosmo_dict):
@@ -166,7 +167,7 @@ class tinker_mass_function(object):
                 self.scale_factor = 1./(1.+redshift)
                 self.build_splines()
         lM_bins = np.log(10**lM_bins) #switch to natural log
-        return np.array([integrate.quad(self.dndlM,lMlow,lMhigh,args=(params))[0] for lMlow,lMhigh in lM_bins])
+        return np.array([self.dndlM_spline.integral(lMlow, lMhigh) for lMlow, lMhigh in lM_bins])
 
 #An example of how to use the tinker mass function
 if __name__ == "__main__":
