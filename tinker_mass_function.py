@@ -84,7 +84,7 @@ class tinker_mass_function(object):
         start = time.time()
         self.build_splines()
         end = time.time()
-        print "splines time:",end-start
+        #print "splines time:",end-start
         return
 
     def build_splines(self):
