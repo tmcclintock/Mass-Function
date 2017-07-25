@@ -8,10 +8,12 @@ from scipy import special
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 import numpy as np
+import timeit
 
 #Physical constants
 G = 4.51701e-48 #Newton's gravitional constant in Mpc^3/s^2/Solar Mass
 Mpcperkm = 3.24077927001e-20 #Mpc/km; used to convert H0 to s^-1
+rhocrit = 3.*(Mpcperkm*100)**2/(8*np.pi*G) #Msun h^2/Mpc^3
 
 class tinker_mass_function(object):
     """A python implementation of the tinker mass function.
@@ -75,12 +77,18 @@ class tinker_mass_function(object):
         Args:
             cosmo_dict (dictionary): Keys are cosmological parameters, specifically om for Omega_matter and h for Hubble constant/100.
         """
+        start = timeit.timeit()
         cc.set_cosmology(cosmo_dict)
+        end = timeit.timeit()
+        print "cc time:",end-start
         Om = cosmo_dict["om"]
-        H0 = cosmo_dict["h"]*100.0
-        self.rhom=Om*3.*(H0*Mpcperkm)**2/(8*np.pi*G*(H0/100.)**2)#Msunh^2/Mpc^3
+        self.rhom=Om*rhocrit#Msunh^2/Mpc^3
         self.cosmo_dict = cosmo_dict
+
+        start = timeit.timeit()
         self.build_splines()
+        end = timeit.timeit()
+        print "splines time:",end-start
         return
 
     def build_splines(self):
@@ -176,12 +184,10 @@ if __name__ == "__main__":
 
     #Create a TMF object
     TMF = tinker_mass_function(cosmo_dict,redshift=0.0)
-
     lM = np.log(np.logspace(12, 15, num=3000))
     dndlM = TMF.dndlM(lM)
-
-    TMF.make_dndlM_spline()
     dndlM2 = np.array([TMF.dndlM_spline(lMi) for lMi in lM])
+    print dndlM[:10]
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(2, sharex=True)
