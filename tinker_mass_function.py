@@ -36,6 +36,7 @@ class tinker_mass_function(object):
         self.redshift = redshift
         self.scale_factor = 1./(1. + self.redshift)
         self.set_new_cosmology(cosmo_dict)
+        self.build_splines()
         self.set_parameters(1.97, 1.0, 0.51, 1.228, 0.482)
 
     def set_parameters(self, d, e, f, g, B=None):
@@ -81,10 +82,6 @@ class tinker_mass_function(object):
         Om = cosmo_dict["om"]
         self.rhom=Om*rhocrit#Msunh^2/Mpc^3
         self.cosmo_dict = cosmo_dict
-        start = time.time()
-        self.build_splines()
-        end = time.time()
-        #print "splines time:",end-start
         return
 
     def build_splines(self):
@@ -149,7 +146,7 @@ class tinker_mass_function(object):
                 cov[i,j] = np.dot(dndp[i], np.dot(Cov_p, dndp[j]))
         return cov
 
-    def n_in_bins(self, lM_bins, redshift=None, params=None):
+    def n_in_bins(self, lM_bins, params=None):
         """
         IMPORTANT: need to change this funtion. It should switch
         to using a spline for dn/dm and then using
@@ -160,16 +157,10 @@ class tinker_mass_function(object):
 
         Args:
             lM_bins (array_like): List of mass bin edges. Shape must be Nbins by 2. Units are Msun/h.
-            redshift (float; optional): Redshift of the mass function. Default is the redshift at initialization.
 
         Returns:
             n (array_like): Tinker halo mass function at each mass bin. Units are number/ (Mpc/h)^3.
         """
-        if redshift is not None:
-            if redshift != self.redshift:
-                self.redshift = redshift
-                self.scale_factor = 1./(1.+redshift)
-                self.build_splines()
         lM_bins = np.log(10**lM_bins) #switch to natural log
         return np.array([self.dndlM_spline.integral(lMlow, lMhigh) for lMlow, lMhigh in lM_bins])
 
@@ -183,7 +174,6 @@ if __name__ == "__main__":
     lM = np.log(np.logspace(12, 15, num=3000))
     dndlM = TMF.dndlM(lM)
     dndlM2 = np.array([TMF.dndlM_spline(lMi) for lMi in lM])
-    print dndlM[:10]
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(2, sharex=True)
