@@ -78,7 +78,9 @@ class tinker_mass_function(object):
         Args:
             cosmo_dict (dictionary): Keys are cosmological parameters, specifically om for Omega_matter and h for Hubble constant/100.
         """
+        print "setting cc cos:",cosmo_dict
         cc.set_cosmology(cosmo_dict)
+        print "sigma inside = ",cc.sigmaMtophat(1e14, 0.25)
         Om = cosmo_dict["om"]
         self.rhom=Om*rhocrit#Msunh^2/Mpc^3
         self.cosmo_dict = cosmo_dict
