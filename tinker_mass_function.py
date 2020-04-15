@@ -78,9 +78,7 @@ class tinker_mass_function(object):
         Args:
             cosmo_dict (dictionary): Keys are cosmological parameters, specifically om for Omega_matter and h for Hubble constant/100.
         """
-        print "setting cc cos:",cosmo_dict
         cc.set_cosmology(cosmo_dict)
-        print "sigma inside = ",cc.sigmaMtophat(1e14, 0.25)
         Om = cosmo_dict["om"]
         self.rhom=Om*rhocrit#Msunh^2/Mpc^3
         self.cosmo_dict = cosmo_dict
@@ -90,7 +88,7 @@ class tinker_mass_function(object):
         """Build the splines needed for integrals over mass bins.
         """
         lM_min,lM_max = self.l10M_bounds
-        M_domain = np.logspace(lM_min-1, lM_max+1, num=1000)
+        M_domain = np.logspace(lM_min-1, lM_max+1, num=500)
         sigmaM = np.array([cc.sigmaMtophat(M, self.scale_factor) 
                            for M in M_domain])
         self.sigmaM_spline = IUS(M_domain, sigmaM)
